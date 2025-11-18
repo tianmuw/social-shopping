@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, mixins, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Sum, IntegerField, Value
+from django.db.models import Sum, IntegerField, Value, Count
 from django.db.models.functions import Coalesce
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
@@ -61,7 +61,8 @@ class PostViewSet(
         # 3. (新) 注解 (Annotate) score 字段
         #    Coalesce(Sum('...'), 0) 确保没有投票的帖子返回 0 而不是 None
         queryset = queryset.annotate(
-            score=Coalesce(Sum('votes__vote_type'), 0, output_field=IntegerField())
+            score=Coalesce(Sum('votes__vote_type'), 0, output_field=IntegerField()),
+            comments_count=Coalesce(Count('comments', distinct=True), 0, output_field=IntegerField())
         )
 
         # 4. 排序 (我们现在可以按分数排序了！)

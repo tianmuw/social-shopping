@@ -59,6 +59,8 @@ class PostListRetrieveSerializer(serializers.ModelSerializer):
     score = serializers.IntegerField(read_only=True)  # 将由 annotation (注解) 提供
     user_vote = serializers.SerializerMethodField()  # 需要我们手动计算
 
+    comments_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Post
         # 在 fields 中包含我们"覆盖"后的字段
@@ -73,6 +75,7 @@ class PostListRetrieveSerializer(serializers.ModelSerializer):
             'product',  # 嵌套的商品信息
             'score',  # <-- (!!!) 添加到 fields
             'user_vote',  # <-- (!!!) 添加到 fields
+            'comments_count',
         ]
 
     def get_user_vote(self, obj):
