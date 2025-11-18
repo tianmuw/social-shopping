@@ -88,7 +88,7 @@ class Vote(models.Model):
         DOWNVOTE = -1, '踩'
 
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="votes")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="votes")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_votes")
     vote_type = models.SmallIntegerField(choices=VoteType.choices)
 
     class Meta:

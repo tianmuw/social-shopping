@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django_redis',
     'djoser',                        # <-- 新增
     'rest_framework_simplejwt',      # <-- 新增
+    'django_filters',
 
     # 我们自己的 Apps (把它们放在这里)
     'users.apps.UsersConfig',
@@ -176,7 +177,12 @@ REST_FRAMEWORK = {
         # 默认情况下，我们允许任何人进行只读访问
         # 这符合我们之前只读 API 的设置
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    )
+    ),
+    # (!!!) 新增这个配置 (!!!)
+    # 告诉 DRF 我们全局启用 DjangoFilterBackend
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
 }
 
 SIMPLE_JWT = {
