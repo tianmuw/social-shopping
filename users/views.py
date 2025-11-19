@@ -2,12 +2,12 @@
 from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 
-from .models import UserFollow
-from .serializers import ProfileSerializer
+from .models import UserFollow, UserBlock
+from .serializers import ProfileSerializer, UserSerializer
 
 User = get_user_model()
 
@@ -50,3 +50,72 @@ class ProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
             # 不，为了简单，我们这里实现 "Toggle" (切换)：点一下关注，再点一下取消。
             follow_obj.delete()
             return Response({'status': 'unfollowed'}, status=status.HTTP_200_OK)
+
+    # ---------------------------------------------------------
+    # 2. 拉黑 / 取消拉黑 (新增)
+    # ---------------------------------------------------------
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def block(self, request, username=None):
+        target_user = self.get_object()
+        blocker = request.user
+        if target_user == blocker:
+            return Response({'detail': '你不能拉黑你自己。'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 拉黑逻辑: 创建记录
+        block_obj, created = UserBlock.objects.get_or_create(blocker=blocker, blocked=target_user)
+
+        if created:
+            # (可选) 强力拉黑: 如果拉黑了，自动取关
+            UserFollow.objects.filter(follower=blocker, followed=target_user).delete()
+            UserFollow.objects.filter(follower=target_user, followed=blocker).delete()
+            return Response({'status': 'blocked'}, status=status.HTTP_201_CREATED)
+        else:
+            # 如果已经拉黑，再次点击则是取消拉黑
+            block_obj.delete()
+            return Response({'status': 'unblocked'}, status=status.HTTP_200_OK)
+
+    # ---------------------------------------------------------
+    # 3. 获取粉丝列表 (带隐私检查)
+    # URL: /api/v1/profiles/{username}/followers/
+    # ---------------------------------------------------------
+    @action(detail=True, methods=['get'])
+    def followers(self, request, username=None):
+        target_user = self.get_object()
+
+        # 隐私检查: 如果不是看自己，且对方设置了"不公开粉丝"，则拒绝
+        if request.user != target_user and not target_user.is_followers_public:
+            return Response({'detail': '该用户的粉丝列表未公开。'}, status=status.HTTP_403_FORBIDDEN)
+
+        # 获取所有关注了 target_user 的人
+        followers = User.objects.filter(following__followed=target_user)
+
+        page = self.paginate_queryset(followers)
+        if page is not None:
+            serializer = UserSerializer(page, many=True)  # 使用简单的 UserSerializer
+            return self.get_paginated_response(serializer.data)
+
+        serializer = UserSerializer(followers, many=True)
+        return Response(serializer.data)
+
+    # ---------------------------------------------------------
+    # 4. 获取关注列表 (带隐私检查)
+    # URL: /api/v1/profiles/{username}/following/
+    # ---------------------------------------------------------
+    @action(detail=True, methods=['get'])
+    def following(self, request, username=None):
+        target_user = self.get_object()
+
+        # 隐私检查
+        if request.user != target_user and not target_user.is_following_public:
+            return Response({'detail': '该用户的关注列表未公开。'}, status=status.HTTP_403_FORBIDDEN)
+
+        # 获取所有 target_user 关注的人
+        following = User.objects.filter(followers__follower=target_user)
+
+        page = self.paginate_queryset(following)
+        if page is not None:
+            serializer = UserSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = UserSerializer(following, many=True)
+        return Response(serializer.data)

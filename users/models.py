@@ -14,6 +14,12 @@ class User(AbstractUser):
 
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name="用户头像")
 
+    # 隐私设置字段 (默认为 True/公开)
+    is_followers_public = models.BooleanField(default=True, verbose_name="公开粉丝列表")
+    is_following_public = models.BooleanField(default=True, verbose_name="公开关注列表")
+    is_joined_topics_public = models.BooleanField(default=True, verbose_name="公开加入的话题")
+    is_created_topics_public = models.BooleanField(default=True, verbose_name="公开创建的话题")
+
     def __str__(self):
         return self.username
 
@@ -33,3 +39,20 @@ class UserFollow(models.Model):
 
     def __str__(self):
         return f"{self.follower} follows {self.followed}"
+
+
+# 拉黑关系模型
+class UserBlock(models.Model):
+    # 主动拉黑的人
+    blocker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="blocking")
+    # 被拉黑的人
+    blocked = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="blocked_by")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('blocker', 'blocked')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.blocker} blocked {self.blocked}"

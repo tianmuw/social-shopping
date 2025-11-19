@@ -13,6 +13,7 @@ from .serializers import (
     CommentSerializer
 )
 from django.db.models import Q
+from users.models import UserBlock
 
 class PostViewSet(
     mixins.CreateModelMixin,
@@ -67,8 +68,20 @@ class PostViewSet(
             comments_count=Coalesce(Count('comments', distinct=True), 0, output_field=IntegerField())
         )
 
-        # 4. 排序 (我们现在可以按分数排序了！)
-        #    排序工作将由我们上面配置的 OrderingFilter 自动完成
+        # 4. 拉黑过滤逻辑
+        user = self.request.user
+        if user.is_authenticated:
+            # A. 我拉黑的人 (我不看他们的帖子)
+            # blocking__blocked_id 指的是 UserBlock 表中 blocker=我 的记录里的 blocked_id
+            blocked_users = UserBlock.objects.filter(blocker=user).values_list('blocked_id', flat=True)
+
+            # B. 拉黑我的人 (他们不希望我看他们的帖子 - 可选，通常双向屏蔽是标准做法)
+            blocking_me_users = UserBlock.objects.filter(blocked=user).values_list('blocker_id', flat=True)
+
+            # C. 执行排除
+            queryset = queryset.exclude(author__id__in=blocked_users)
+            queryset = queryset.exclude(author__id__in=blocking_me_users)
+
         return queryset
 
     def perform_create(self, serializer):

@@ -10,6 +10,7 @@ class Notification(models.Model):
         ('comment', '评论了你的帖子'),
         ('reply', '回复了你的评论'),
         ('vote', '赞了你的帖子'),  # 可选
+        ('message', '给你发了私信'),
     )
 
     # 接收者 (谁应该看到这条通知)

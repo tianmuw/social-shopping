@@ -16,6 +16,16 @@ class Topic(models.Model):
 
     banner = models.ImageField(upload_to='topics/banners/', blank=True, null=True, verbose_name="话题背景图")
 
+    # 记录话题创建者
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,  # 如果用户注销，话题保留，但在显示时显示为"已注销用户"
+        null=True,
+        blank=True,
+        related_name="created_topics",
+        verbose_name="创建者"
+    )
+
     # 修改：我们不需要在这里直接定义 subscribers ManyToMany
     # 因为我们下面会创建一个中间模型 TopicSubscription 来管理它，这样更灵活
 
