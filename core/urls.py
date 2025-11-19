@@ -27,6 +27,7 @@ from topics.views import TopicViewSet
 from posts.views import PostViewSet
 from users.views import ProfileViewSet
 from chat.views import ConversationViewSet
+from notifications.views import NotificationViewSet
 
 
 # 1. 创建一个 V1 版本的总路由器
@@ -37,6 +38,7 @@ router_v1.register(r'topics', TopicViewSet, basename='topic')
 router_v1.register(r'posts', PostViewSet, basename='post')
 router_v1.register(r'profiles', ProfileViewSet, basename='profile')
 router_v1.register(r'chat/conversations', ConversationViewSet, basename='conversation')
+router_v1.register(r'notifications', NotificationViewSet, basename='notification')
 
 
 # 3. 定义主 URL 模式

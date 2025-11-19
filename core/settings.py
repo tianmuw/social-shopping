@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'topics.apps.TopicsConfig',
     'posts.apps.PostsConfig',
     'chat.apps.ChatConfig',
+    'notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [
