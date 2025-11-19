@@ -1,24 +1,21 @@
 from rest_framework import serializers
-from .models import Topic
+from .models import Topic, TopicSubscription
 
 
 class TopicSerializer(serializers.ModelSerializer):
-    """
-    Topic 模型的序列化器
-    """
+    # 1. 这是一个只读字段，由 View 中的 annotate 计算得出
+    subscribers_count = serializers.IntegerField(read_only=True)
+
+    # 2. 这是一个动态字段，判断当前用户是否已加入
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
-        model = Topic  # 告诉序列化器它对应的是 Topic 模型
+        model = Topic
+        fields = ['id', 'name', 'slug', 'description', 'subscribers_count', 'is_subscribed']
 
-        # 告诉它需要"翻译"哪些字段
-        # 我们希望 API 返回这些信息
-        fields = ['id', 'name', 'slug', 'description', 'subscribers_count']
-
-    # 我们在 ModelSerializer 之外额外定义一个字段
-    # Model 里没有 'subscribers_count'，但我们可以自己算出来
-    subscribers_count = serializers.SerializerMethodField()
-
-    def get_subscribers_count(self, obj):
-        # 'obj' 就是当前的 Topic 实例
-        # .count() 是一个高效的数据库操作
-        return obj.subscribers.count()
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            # 检查是否存在订阅记录
+            return TopicSubscription.objects.filter(user=request.user, topic=obj).exists()
+        return False

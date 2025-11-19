@@ -23,16 +23,17 @@ from rest_framework.routers import DefaultRouter
 # 导入我们 app 里的 router
 # 我们需要先导入 viewset，而不是 router
 from topics.views import TopicViewSet
-from posts.views import PostViewSet  # <-- 新增这一行
+from posts.views import PostViewSet
+from users.views import ProfileViewSet
 
-# from posts.views import PostViewSet  # (我们下一步会用到)
 
 # 1. 创建一个 V1 版本的总路由器
 router_v1 = DefaultRouter()
 
 # 2. 把我们所有的 ViewSet 注册到这个总路由器上
 router_v1.register(r'topics', TopicViewSet, basename='topic')
-router_v1.register(r'posts', PostViewSet, basename='post') # <-- 新增这一行
+router_v1.register(r'posts', PostViewSet, basename='post')
+router_v1.register(r'profiles', ProfileViewSet, basename='profile')
 
 
 # 3. 定义主 URL 模式

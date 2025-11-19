@@ -11,8 +11,8 @@ class Topic(models.Model):
     # topic_image = models.ImageField(upload_to='topics/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # 关注者 (一个话题可以被多个用户关注)
-    subscribers = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="subscribed_topics", blank=True)
+    # 修改：我们不需要在这里直接定义 subscribers ManyToMany
+    # 因为我们下面会创建一个中间模型 TopicSubscription 来管理它，这样更灵活
 
     def save(self, *args, **kwargs):
         # 自动根据 name 生成 slug
@@ -22,3 +22,14 @@ class Topic(models.Model):
 
     def __str__(self):
         return self.name
+
+class TopicSubscription(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="topic_subscriptions")
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="subscriptions")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'topic') # 确保用户不能重复加入同一个话题
+
+    def __str__(self):
+        return f"{self.user} joined {self.topic}"
