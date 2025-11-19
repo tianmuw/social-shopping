@@ -12,7 +12,7 @@ from .serializers import (
     VoteSerializer,
     CommentSerializer
 )
-
+from django.db.models import Q
 
 class PostViewSet(
     mixins.CreateModelMixin,
@@ -169,3 +169,35 @@ class PostViewSet(
 
         # 返回新创建的评论 (包含嵌套的作者)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def following(self, request):
+        """
+        获取"关注流"：只返回我关注的用户发布的帖子，或我加入的话题下的帖子。
+        URL: /api/v1/posts/following/
+        """
+        user = request.user
+
+        # 1. 获取我关注的用户 ID 列表
+        # UserFollow 模型中: follower=我, related_name='following'
+        # 我们需要取出的字段是 'followed' (被关注的人)
+        followed_user_ids = user.following.values_list('followed', flat=True)
+
+        # 2. 获取我加入的话题 ID 列表
+        # TopicSubscription 模型中: user=我, related_name='topic_subscriptions'
+        # 我们需要取出的字段是 'topic'
+        joined_topic_ids = user.topic_subscriptions.values_list('topic', flat=True)
+
+        # 3. 核心过滤逻辑: (作者是我关注的人) OR (话题是我加入的)
+        queryset = self.get_queryset().filter(
+            Q(author__in=followed_user_ids) | Q(topic__in=joined_topic_ids)
+        ).distinct()  # distinct() 去重，防止同一篇帖子因为既关注了人又加入了话题而出现两次
+
+        # 4. 支持分页 (如果开启了分页)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
