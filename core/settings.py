@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne', # 必须在最前面
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,14 +45,16 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_redis',
-    'djoser',                        # <-- 新增
-    'rest_framework_simplejwt',      # <-- 新增
+    'djoser',
+    'rest_framework_simplejwt',
     'django_filters',
+    'channels',
 
     # 我们自己的 Apps (把它们放在这里)
     'users.apps.UsersConfig',
     'topics.apps.TopicsConfig',
     'posts.apps.PostsConfig',
+    'chat.apps.ChatConfig',
 ]
 
 MIDDLEWARE = [
@@ -83,6 +86,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.asgi.application'
 
 
 # Database
@@ -219,3 +223,12 @@ DJOSER = {
 }
 
 LOGIN_REDIRECT_URL = '/api/v1/'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)], # 确保你的 Redis 在这个地址运行
+        },
+    },
+}

@@ -7,10 +7,29 @@ For more information on this file, see
 https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
 """
 
+# backend/core/asgi.py
 import os
-
 from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+# from channels.auth import AuthMiddlewareStack
+from chat.middleware import JwtAuthMiddleware
+from chat import routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
-application = get_asgi_application()
+# 初始化 Django ASGI 应用
+django_asgi_app = get_asgi_application()
+
+application = ProtocolTypeRouter({
+    # 1. 如果是 HTTP 请求，交给 Django 正常处理
+    "http": django_asgi_app,
+
+    # 2. 如果是 WebSocket 请求，交给 Channels 处理
+    # AuthMiddlewareStack 会自动把用户 user 放入 scope 中
+    "websocket": JwtAuthMiddleware(
+        URLRouter(
+            # 使用 chat.routing
+            routing.websocket_urlpatterns
+        )
+    ),
+})
