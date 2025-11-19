@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, mixins, status
+from rest_framework import viewsets, permissions, mixins, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Sum, IntegerField, Value, Count
@@ -23,12 +23,14 @@ class PostViewSet(
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     # 指定我们使用的所有 Backend
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, filters.SearchFilter]
 
     filterset_fields = ['topic__slug']
 
     # 允许 API 用户通过 ?ordering=score 或 ?ordering=-score 来排序
     ordering_fields = ['created_at', 'score']
+
+    search_fields = ['title', 'content']
 
     # 如果用户不提供 ordering 参数, 默认按 "最新" 排序
     ordering = ['-created_at']
