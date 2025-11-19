@@ -12,7 +12,7 @@ class PostUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username']
+        fields = ['id', 'username', 'avatar']
 
 
 class PostTopicSerializer(serializers.ModelSerializer):
@@ -20,7 +20,7 @@ class PostTopicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Topic
-        fields = ['id', 'name', 'slug']
+        fields = ['id', 'name', 'slug', 'icon']
 
 
 class ProductSerializer(serializers.ModelSerializer):

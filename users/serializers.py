@@ -10,7 +10,7 @@ class UserCreateSerializer(BaseUserCreateSerializer):
     class Meta(BaseUserCreateSerializer.Meta):
         model = User
         # 我们允许用户在注册时只提交这三个字段
-        fields = ('id', 'username', 'email', 'password')
+        fields = ('id', 'username', 'email', 'password', 'avatar')
 
 class UserSerializer(BaseUserSerializer):
     """
@@ -19,7 +19,7 @@ class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
         model = User
         # 我们只暴露这些"安全"的字段，绝不能暴露 password_hash
-        fields = ('id', 'username', 'email')
+        fields = ('id', 'username', 'email', 'avatar')
 
 class ProfileSerializer(serializers.ModelSerializer):
     """
@@ -28,11 +28,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     followers_count = serializers.IntegerField(read_only=True)
     following_count = serializers.IntegerField(read_only=True)
     is_followed = serializers.SerializerMethodField()
+    avatar = serializers.ImageField(read_only=True)
 
     class Meta:
         model = User
         # 我们只暴露公开字段，绝不要暴露 email 或 password
-        fields = ['id', 'username', 'date_joined', 'followers_count', 'following_count', 'is_followed']
+        fields = ['id', 'username', 'date_joined', 'followers_count', 'following_count', 'is_followed', 'avatar']
 
     def get_is_followed(self, obj):
         request = self.context.get('request')

@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
+from xpinyin import Pinyin
 
 
 class Topic(models.Model):
@@ -11,13 +12,18 @@ class Topic(models.Model):
     # topic_image = models.ImageField(upload_to='topics/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    icon = models.ImageField(upload_to='topics/', blank=True, null=True, verbose_name="话题图标")
+
+    banner = models.ImageField(upload_to='topics/banners/', blank=True, null=True, verbose_name="话题背景图")
+
     # 修改：我们不需要在这里直接定义 subscribers ManyToMany
     # 因为我们下面会创建一个中间模型 TopicSubscription 来管理它，这样更灵活
 
     def save(self, *args, **kwargs):
         # 自动根据 name 生成 slug
         if not self.slug:
-            self.slug = slugify(self.name)
+            p = Pinyin()
+            self.slug = p.get_pinyin(self.name, '-')
         super().save(*args, **kwargs)
 
     def __str__(self):

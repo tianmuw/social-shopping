@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Count
+from django.db.models import Count, F, ExpressionWrapper, IntegerField
 
 from .models import Topic, TopicSubscription
 from .serializers import TopicSerializer
@@ -17,9 +17,25 @@ class TopicViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     lookup_field = 'slug'
 
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
 
     search_fields = ['name', 'description']
+    ordering_fields = ['heat_score', 'created_at', 'subscribers_count']  # 允许前端按这些字段排序
+
+    def get_queryset(self):
+        # (!!!) 热度算法核心逻辑 (!!!)
+        return Topic.objects.annotate(
+            # 1. 统计订阅数
+            subscribers_count=Count('subscriptions', distinct=True),
+            # 2. 统计帖子数
+            posts_count=Count('posts', distinct=True)
+        ).annotate(
+            # 3. 计算热度分 = 订阅数 + (帖子数 * 2)
+            heat_score=ExpressionWrapper(
+                F('subscribers_count') + (F('posts_count') * 2),
+                output_field=IntegerField()
+            )
+        ).order_by('-heat_score', '-created_at') # 默认按热度倒序，然后是时间
 
     #加入话题
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
