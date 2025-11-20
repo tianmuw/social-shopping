@@ -14,6 +14,28 @@ from .serializers import (
 )
 from django.db.models import Q
 from users.models import UserBlock
+import django_filters
+from django.utils import timezone
+from datetime import timedelta
+
+# 自定义时间过滤器
+class PostFilter(django_filters.FilterSet):
+    # 定义一个 'time_range' 参数
+    time_range = django_filters.CharFilter(method='filter_time_range')
+
+    class Meta:
+        model = Post
+        fields = ['topic__slug', 'time_range'] # 保留原有的 topic 筛选
+
+    def filter_time_range(self, queryset, name, value):
+        now = timezone.now()
+        if value == 'today':
+            return queryset.filter(created_at__gte=now - timedelta(days=1))
+        elif value == 'week':
+            return queryset.filter(created_at__gte=now - timedelta(days=7))
+        elif value == 'month':
+            return queryset.filter(created_at__gte=now - timedelta(days=30))
+        return queryset # 'all' 或其他值不回过滤
 
 class PostViewSet(
     mixins.CreateModelMixin,
@@ -28,8 +50,10 @@ class PostViewSet(
 
     filterset_fields = ['topic__slug']
 
+    filterset_class = PostFilter
+
     # 允许 API 用户通过 ?ordering=score 或 ?ordering=-score 来排序
-    ordering_fields = ['created_at', 'score']
+    ordering_fields = ['created_at', 'score', 'comments_count']
 
     search_fields = ['title', 'content']
 

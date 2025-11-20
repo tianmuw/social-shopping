@@ -1,5 +1,5 @@
 # backend/users/views.py
-from rest_framework import viewsets, permissions, status, mixins
+from rest_framework import viewsets, permissions, status, mixins, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Count, Q
@@ -11,7 +11,7 @@ from .serializers import ProfileSerializer, UserSerializer
 
 User = get_user_model()
 
-class ProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
+class ProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.ListModelMixin):
     """
     只读视图集，用于查看用户资料和关注/取消关注。
     Lookup field 是 'username' 而不是 'id'，这样 URL 更友好 (/profiles/Mike/)
@@ -19,7 +19,13 @@ class ProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
     queryset = User.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    lookup_field = 'username' # (!!!) 关键：使用用户名查找
+    lookup_field = 'username' # 使用用户名查找
+
+    # 启用搜索和排序
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['username']
+    ordering_fields = ['followers_count', 'date_joined']
+    ordering = ['-followers_count']  # 默认按粉丝数倒序 (即高粉丝数在前)
 
     def get_queryset(self):
         # 预先计算粉丝数和关注数
