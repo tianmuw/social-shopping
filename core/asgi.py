@@ -13,7 +13,8 @@ from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 # from channels.auth import AuthMiddlewareStack
 from chat.middleware import JwtAuthMiddleware
-from chat import routing
+from chat import routing as chat_routing
+from notifications import routing as notifications_routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
@@ -28,8 +29,9 @@ application = ProtocolTypeRouter({
     # AuthMiddlewareStack 会自动把用户 user 放入 scope 中
     "websocket": JwtAuthMiddleware(
         URLRouter(
-            # 使用 chat.routing
-            routing.websocket_urlpatterns
+            # 合并路由列表
+            chat_routing.websocket_urlpatterns +
+            notifications_routing.websocket_urlpatterns
         )
     ),
 })
