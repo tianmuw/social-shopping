@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+import dj_database_url
+from dotenv import load_dotenv
 try:
     from core.oss_settings import ALIYUN_OSS_ACCESS_KEY_ID, ALIYUN_OSS_ACCESS_KEY_SECRET
 except ImportError:
@@ -20,6 +22,9 @@ except ImportError:
     print("OSS Import Error")
     ALIYUN_OSS_ACCESS_KEY_ID = ""
     ALIYUN_OSS_ACCESS_KEY_SECRET = ""
+
+# 加载.env文件
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,12 +34,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-75gj4fzm6i&k8n&2=iqubt4&l$yv9#e97@3-th_7ku(e2d%m#q'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'default-insecure-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 
@@ -103,14 +108,18 @@ ASGI_APPLICATION = 'core.asgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'social_shopping_db', # 数据库名
-        'USER': 'admin',             # 用户名
-        'PASSWORD': 'admin',         # 密码
-        'HOST': 'localhost',         # 地址
-        'PORT': '5432',              # 默认端口
-    }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'social_shopping_db', # 数据库名
+    #     'USER': 'admin',             # 用户名
+    #     'PASSWORD': 'admin',         # 密码
+    #     'HOST': 'localhost',         # 地址
+    #     'PORT': '5432',              # 默认端口
+    # }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
 }
 
 
@@ -156,10 +165,10 @@ STATIC_URL = 'static/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # 阿里云 OSS 配置
 ALIYUN_OSS = {
-    'ACCESS_KEY_ID': ALIYUN_OSS_ACCESS_KEY_ID,
-    'ACCESS_KEY_SECRET': ALIYUN_OSS_ACCESS_KEY_SECRET,
-    'ENDPOINT': 'oss-cn-beijing.aliyuncs.com',
-    'BUCKET_NAME': 'tm-web-tlias',
+    'ACCESS_KEY_ID': os.environ.get('ALIYUN_ACCESS_KEY_ID'),
+    'ACCESS_KEY_SECRET': os.environ.get('ALIYUN_ACCESS_KEY_SECRET'),
+    'ENDPOINT': os.environ.get('ALIYUN_OSS_ENDPOINT'),
+    'BUCKET_NAME': os.environ.get('ALIYUN_OSS_BUCKET_NAME'),
     'URL_EXPIRE_SECONDS': 3600,  # 可选，默认为3600
 }
 STORAGES = {
@@ -182,8 +191,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # Celery (使用 Redis 作为 Broker)
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.environ.get('REDIS_URL')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
 
 # 缓存
 CACHES = {
@@ -255,7 +264,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)], # 确保你的 Redis 在这个地址运行
+            "hosts": [os.environ.get('REDIS_URL')], # 确保你的 Redis 在这个地址运行
         },
     },
 }

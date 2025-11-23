@@ -1,0 +1,35 @@
+/media/
+.env
+passwords.txt
+/staticfiles/
+/https_/
+test_oss.py
+
+# Python 编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# PyCharm 配置（重要！避免上传 IDE 配置）
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# 日志
+logs/
+*.log
+
+# 其他
+.DS_Store  # Mac 系统文件
+*.zip
+*.tar.gz
+
+/core/oss_settings.py
+/avatars/
