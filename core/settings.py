@@ -13,6 +13,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+try:
+    from core.oss_settings import ALIYUN_OSS_ACCESS_KEY_ID, ALIYUN_OSS_ACCESS_KEY_SECRET
+except ImportError:
+    # 开发环境默认值（或抛出异常）
+    print("OSS Import Error")
+    ALIYUN_OSS_ACCESS_KEY_ID = ""
+    ALIYUN_OSS_ACCESS_KEY_SECRET = ""
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +35,7 @@ SECRET_KEY = 'django-insecure-75gj4fzm6i&k8n&2=iqubt4&l$yv9#e97@3-th_7ku(e2d%m#q
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
 
 
 # Application definition
@@ -49,6 +57,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django_filters',
     'channels',
+    'django5_aliyun_oss',
 
     # 我们自己的 Apps (把它们放在这里)
     'users.apps.UsersConfig',
@@ -142,8 +151,25 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 # 用于存储用户上传的文件 (头像, 图标等)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# 原本本地的存储
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# 阿里云 OSS 配置
+ALIYUN_OSS = {
+    'ACCESS_KEY_ID': ALIYUN_OSS_ACCESS_KEY_ID,
+    'ACCESS_KEY_SECRET': ALIYUN_OSS_ACCESS_KEY_SECRET,
+    'ENDPOINT': 'oss-cn-beijing.aliyuncs.com',
+    'BUCKET_NAME': 'tm-web-tlias',
+    'URL_EXPIRE_SECONDS': 3600,  # 可选，默认为3600
+}
+STORAGES = {
+    'default': {
+        'BACKEND': 'django5_aliyun_oss.storage.AliyunOSSStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    }
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
