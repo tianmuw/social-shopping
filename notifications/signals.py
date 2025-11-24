@@ -2,7 +2,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from users.models import UserFollow
-from posts.models import Comment
+from posts.models import Comment, Vote
 from chat.models import Message
 from .models import Notification
 from channels.layers import get_channel_layer
@@ -41,6 +41,32 @@ def create_follow_notification(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Comment)
 def create_comment_notification(sender, instance, created, **kwargs):
     if created:
+        # (!!!) 新增逻辑：同时广播给"帖子频道" (解决问题 1 的一部分) (!!!)
+        # 我们在这里顺便把"新评论"广播给正在看帖子的所有人
+        channel_layer = get_channel_layer()
+        # 假设帖子频道的组名是 "post_{id}"
+        # 我们需要序列化评论数据，这里简单构造一下，或者引入 Serializer
+        # 为了避免循环导入，我们简单构造一个字典
+        comment_data = {
+            "id": instance.id,
+            "content": instance.content,
+            "created_at": instance.created_at.isoformat(),
+            "author": {
+                "username": instance.author.username,
+                "avatar": instance.author.avatar.url if instance.author.avatar else None
+            },
+            "replies": []  # 新评论肯定没有回复
+        }
+
+        async_to_sync(channel_layer.group_send)(
+            f"post_{instance.post.id}",
+            {
+                "type": "send_new_comment",  # 对应 Consumer 的方法
+                "comment": comment_data
+            }
+        )
+
+        # (原有的通知逻辑保持不变)
         recipient = None
         if instance.parent:
             if instance.parent.author != instance.author:
@@ -81,3 +107,18 @@ def create_message_notification(sender, instance, created, **kwargs):
                 # 但为了简单，我们稍后在前端处理跳转逻辑
             )
             push_notification(notif)  # 推送
+
+# 监听点赞
+@receiver(post_save, sender=Vote)
+def create_vote_notification(sender, instance, created, **kwargs):
+    # 只在创建且是"顶"(1)的时候发通知，"踩"(-1)通常不发通知
+    if created and instance.vote_type == 1:
+        # 不要给自己发通知
+        if instance.post.author != instance.user:
+            notif = Notification.objects.create(
+                recipient=instance.post.author,
+                actor=instance.user,
+                notification_type='vote', # 确保 models.py 的 TYPE_CHOICES 里有 'vote'
+                post_id=instance.post.id
+            )
+            push_notification(notif)

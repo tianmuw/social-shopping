@@ -16,6 +16,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from chat.middleware import JwtAuthMiddleware
 from chat import routing as chat_routing
 from notifications import routing as notifications_routing
+from posts import routing as posts_routing
 
 
 application = ProtocolTypeRouter({
@@ -28,7 +29,8 @@ application = ProtocolTypeRouter({
         URLRouter(
             # 合并路由列表
             chat_routing.websocket_urlpatterns +
-            notifications_routing.websocket_urlpatterns
+            notifications_routing.websocket_urlpatterns +
+            posts_routing.websocket_urlpatterns
         )
     ),
 })
