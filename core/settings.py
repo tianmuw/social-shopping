@@ -160,6 +160,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# 告诉 Django 把收集到的静态文件放在项目根目录下的 'staticfiles' 文件夹里
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 # 用于存储用户上传的文件 (头像, 图标等)
 # 原本本地的存储
 # MEDIA_URL = '/media/'

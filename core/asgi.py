@@ -10,16 +10,13 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
 # backend/core/asgi.py
 import os
 from django.core.asgi import get_asgi_application
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+django_asgi_app = get_asgi_application()
 from channels.routing import ProtocolTypeRouter, URLRouter
-# from channels.auth import AuthMiddlewareStack
 from chat.middleware import JwtAuthMiddleware
 from chat import routing as chat_routing
 from notifications import routing as notifications_routing
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
-
-# 初始化 Django ASGI 应用
-django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
     # 1. 如果是 HTTP 请求，交给 Django 正常处理
