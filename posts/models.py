@@ -17,6 +17,9 @@ class Post(models.Model):
     # 帖子和话题是多对一关系
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="posts")
 
+    # 视频字段
+    video = models.FileField(upload_to='posts/videos/', blank=True, null=True, verbose_name="视频")
+
     view_count = models.PositiveIntegerField(default=0, verbose_name="浏览量")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -97,3 +100,12 @@ class Vote(models.Model):
 
     def __str__(self):
         return f"{self.user} {self.get_vote_type_display()} {self.post.title}"
+
+# 帖子图片模型 (支持多图)
+class PostImage(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='posts/images/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for {self.post.title}"

@@ -15,13 +15,13 @@ from datetime import timedelta
 import os
 import dj_database_url
 from dotenv import load_dotenv
-try:
-    from core.oss_settings import ALIYUN_OSS_ACCESS_KEY_ID, ALIYUN_OSS_ACCESS_KEY_SECRET
-except ImportError:
-    # 开发环境默认值（或抛出异常）
-    print("OSS Import Error")
-    ALIYUN_OSS_ACCESS_KEY_ID = ""
-    ALIYUN_OSS_ACCESS_KEY_SECRET = ""
+# try:
+#     from core.oss_settings import ALIYUN_OSS_ACCESS_KEY_ID, ALIYUN_OSS_ACCESS_KEY_SECRET
+# except ImportError:
+#     # 开发环境默认值（或抛出异常）
+#     print("OSS Import Error")
+#     ALIYUN_OSS_ACCESS_KEY_ID = ""
+#     ALIYUN_OSS_ACCESS_KEY_SECRET = ""
 
 # 加载.env文件
 load_dotenv()
