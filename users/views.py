@@ -5,9 +5,10 @@ from rest_framework.response import Response
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from rest_framework.exceptions import ValidationError
 
-from .models import UserFollow, UserBlock
-from .serializers import ProfileSerializer, UserSerializer
+from .models import UserFollow, UserBlock, MerchantProfile
+from .serializers import ProfileSerializer, UserSerializer, MerchantProfileSerializer
 
 User = get_user_model()
 
@@ -125,3 +126,31 @@ class ProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.
 
         serializer = UserSerializer(following, many=True)
         return Response(serializer.data)
+
+class MerchantViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
+    """
+    商家接口：
+    POST /api/v1/merchants/ -> 提交申请
+    GET  /api/v1/merchants/me/ -> 查看我的状态
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MerchantProfileSerializer
+
+    def get_queryset(self):
+        return MerchantProfile.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # 检查是否已经申请过
+        if MerchantProfile.objects.filter(user=self.request.user).exists():
+            raise ValidationError("您已经提交过商家申请，请勿重复提交。")
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        try:
+            merchant = MerchantProfile.objects.get(user=request.user)
+            serializer = self.get_serializer(merchant)
+            return Response(serializer.data)
+        except MerchantProfile.DoesNotExist:
+            # 如果没申请过，返回 404，前端据此显示表单
+            return Response({'detail': '尚未申请'}, status=status.HTTP_404_NOT_FOUND)

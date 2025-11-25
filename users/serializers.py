@@ -1,7 +1,7 @@
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from djoser.serializers import UserSerializer as BaseUserSerializer
 from rest_framework import serializers
-from .models import User, UserFollow
+from .models import User, UserFollow, MerchantProfile
 
 class UserCreateSerializer(BaseUserCreateSerializer):
     """
@@ -56,3 +56,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             from .models import UserBlock  # 局部导入防止循环引用
             return UserBlock.objects.filter(blocker=request.user, blocked=obj).exists()
         return False
+
+class MerchantProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MerchantProfile
+        # 前端提交: shop_name, description, license_image
+        # 后端返回: status, reject_reason
+        fields = ['id', 'shop_name', 'description', 'license_image', 'status', 'reject_reason', 'created_at']
+        read_only_fields = ['status', 'reject_reason', 'created_at'] # 用户不能自己改状态

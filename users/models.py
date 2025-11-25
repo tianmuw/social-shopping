@@ -56,3 +56,33 @@ class UserBlock(models.Model):
 
     def __str__(self):
         return f"{self.blocker} blocked {self.blocked}"
+
+
+class MerchantProfile(models.Model):
+    """
+    商家档案：用于存储商家的店铺信息和审核状态
+    """
+    STATUS_CHOICES = (
+        ('pending', '待审核'),
+        ('approved', '已认证'),
+        ('rejected', '已拒绝'),
+    )
+
+    # 关联到用户 (一个用户只能开一个店)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='merchant_profile')
+
+    # 店铺基本信息
+    shop_name = models.CharField(max_length=100, unique=True, verbose_name="店铺名称")
+    description = models.TextField(blank=True, verbose_name="店铺简介")
+
+    # 资质材料 (营业执照等)
+    license_image = models.ImageField(upload_to='merchant/licenses/', verbose_name="营业执照")
+
+    # 审核状态
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="认证状态")
+    reject_reason = models.TextField(blank=True, verbose_name="拒绝理由")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.shop_name} ({self.get_status_display()})"

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Post, AssociatedProduct, Comment, Vote, PostImage
-from users.models import User
+from users.models import User, MerchantProfile
 from topics.models import Topic
 from django.db.models import Sum
 
@@ -32,8 +32,13 @@ class ProductSerializer(serializers.ModelSerializer):
             'original_url',
             'product_title',
             'product_image_url',
-            'product_price',
-            'scrape_status'
+            'product_price',    # (爬虫抓取的文本价格)
+            'scrape_status',
+
+            # 自营字段
+            'product_type',
+            'price',  # (商家设置的数字价格)
+            'stock',
         ]
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -108,7 +113,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
     用于"创建"(POST)帖子的序列化器
     """
     # 我们需要用户手动提交 product_url 和 topic (用 slug)
-    product_url = serializers.URLField(write_only=True, max_length=1024)
+    product_url = serializers.URLField(write_only=True, max_length=1024, required=False)
     topic = serializers.SlugRelatedField(
         slug_field='slug', # 用户将提交 'huashan-travel'
         queryset=Topic.objects.all(), # Django 会从这里查找
@@ -123,6 +128,10 @@ class PostCreateSerializer(serializers.ModelSerializer):
         required=False
     )
 
+    # 新增自营字段
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, write_only=True)
+    stock = serializers.IntegerField(required=False, write_only=True)
+
     class Meta:
         model = Post
         fields = [
@@ -132,14 +141,20 @@ class PostCreateSerializer(serializers.ModelSerializer):
             'product_url', # 这个是 write_only
             'video',
             'uploaded_images',
+            'price',
+            'stock',
         ]
 
     def create(self, validated_data):
         # 1. 从 validated_data 中分离出 product_url 和 topic
         #    'pop' 会删除它们，因为 'Post' 模型里没有这两个字段
-        product_url = validated_data.pop('product_url')
+        product_url = validated_data.pop('product_url', None)
         topic = validated_data.pop('topic')
         uploaded_images = validated_data.pop('uploaded_images', [])  # 取出图片列表
+
+        # 取出价格和库存
+        price = validated_data.pop('price', None)
+        stock = validated_data.pop('stock', None)
 
         # 2. 获取当前登录的用户 (Serializer 会自动从 view 接收)
         user = self.context['request'].user
@@ -152,21 +167,44 @@ class PostCreateSerializer(serializers.ModelSerializer):
             **validated_data
         )
 
-        # 处理多图上传
-        for image in uploaded_images:
-            PostImage.objects.create(post=post, image=image)
+        # 处理图片 (同时记录第一张图作为商品主图)
+        first_image_url = None
+        for i, image in enumerate(uploaded_images):
+            post_image = PostImage.objects.create(post=post, image=image)
+            if i == 0:
+                first_image_url = post_image.image.url  # 获取 OSS URL
 
-        if product_url:
-            # 4. 创建关联的 Product 实例
-            product = AssociatedProduct.objects.create(
+        # 处理多图上传
+        # for image in uploaded_images:
+        #     PostImage.objects.create(post=post, image=image)
+
+        # 分支 A: 自营商品 (有价格和库存)
+        if price is not None and stock is not None:
+            try:
+                merchant = MerchantProfile.objects.get(user=user)
+                AssociatedProduct.objects.create(
+                    post=post,
+                    product_type=AssociatedProduct.ProductType.INTERNAL,  # 标记为自营
+                    merchant=merchant,
+                    price=price,
+                    stock=stock,
+                    product_title=post.title,  # 自营商品直接用帖子标题作为商品名
+                    product_image_url=first_image_url,  # 使用第一张上传的图片
+                    scrape_status=AssociatedProduct.ScrapeStatus.SUCCESS  # 直接成功
+                )
+            except MerchantProfile.DoesNotExist:
+                # 如果不是商家却传了价格，忽略或报错，这里选择忽略
+                pass
+
+        # 分支 B: 外链商品 (有 URL)
+        elif product_url:
+            AssociatedProduct.objects.create(
                 post=post,
                 original_url=product_url,
                 scrape_status=AssociatedProduct.ScrapeStatus.PROCESSING
             )
-
-            # 5. (关键!) 触发 Celery 异步任务
-            #    我们把新创建的 product.id 传给它
             from .tasks import task_scrape_product
+            product = post.product
             task_scrape_product.delay(product.id)
 
         # 6. 返回新创建的 Post 实例

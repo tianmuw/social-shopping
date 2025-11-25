@@ -25,7 +25,12 @@ class PostFilter(django_filters.FilterSet):
 
     class Meta:
         model = Post
-        fields = ['topic__slug', 'time_range'] # 保留原有的 topic 筛选
+        # 关键修复：在这里把所有需要的过滤字段都补上
+        fields = ['topic__slug',
+                  'author__username',  # 商家后台用：筛选作者
+                  'product__product_type',  # 商家后台用：筛选自营/外链
+                  'time_range',     # 搜索页用：筛选时间
+                  ] # 保留原有的 topic 筛选
 
     def filter_time_range(self, queryset, name, value):
         now = timezone.now()
@@ -48,7 +53,7 @@ class PostViewSet(
     # 指定我们使用的所有 Backend
     filter_backends = [DjangoFilterBackend, OrderingFilter, filters.SearchFilter]
 
-    filterset_fields = ['topic__slug']
+    filterset_fields = ['topic__slug', 'author__username', 'product__product_type']
 
     filterset_class = PostFilter
 

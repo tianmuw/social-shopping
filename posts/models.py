@@ -3,6 +3,7 @@ from django.conf import settings
 
 # 导入我们刚创建的 Topic 模型
 from topics.models import Topic
+from users.models import MerchantProfile
 
 from pgvector.django import VectorField
 
@@ -40,6 +41,10 @@ class AssociatedProduct(models.Model):
     帖子关联的商品
     """
 
+    class ProductType(models.TextChoices):
+        EXTERNAL = 'EXTERNAL', '外部链接'
+        INTERNAL = 'INTERNAL', '自营商品'
+
     class ScrapeStatus(models.TextChoices):
         PROCESSING = 'PROCESSING', '处理中'
         SUCCESS = 'SUCCESS', '成功'
@@ -47,12 +52,43 @@ class AssociatedProduct(models.Model):
 
     # 商品和帖子是一对一关系 (一个帖子只关联一个商品)
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name="product")
-    original_url = models.URLField(max_length=1024, verbose_name="原始商品链接")
+
+    # 商品类型
+    product_type = models.CharField(
+        max_length=20,
+        choices=ProductType.choices,
+        default=ProductType.EXTERNAL,
+        verbose_name="商品类型"
+    )
+
+    original_url = models.URLField(max_length=1024, blank=True, null=True, verbose_name="原始商品链接")
+
+    # 字段 (自营商品用)
+    # 关联到商家
+    merchant = models.ForeignKey(
+        'users.MerchantProfile',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='products',
+        verbose_name="所属商家"
+    )
+
+    # 价格 (Decimal 更适合存钱)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="自营价格")
+
+    # 库存
+    stock = models.PositiveIntegerField(default=0, verbose_name="库存")
+
+    # 通用字段 (自动抓取 或 商家手动填写)
+    product_title = models.CharField(max_length=512, blank=True, null=True, verbose_name="商品标题")
+    product_image_url = models.URLField(max_length=1024, blank=True, null=True, verbose_name="商品图片URL")
+    # 注意：自营商品通常会直接上传图片到 PostImage，或者我们可以加一个 product_image ImageField
+    # 为了简单，V1阶段自营商品可以复用 Post 的第一张图作为主图，或者复用 product_image_url 存 OSS 地址
 
     # 自动抓取的信息
-    product_title = models.CharField(max_length=512, blank=True, null=True, verbose_name="商品标题")
-    product_image_url = models.URLField(max_length=1024, blank=True, null=True, verbose_name="商品图片")
-    product_price = models.CharField(max_length=100, blank=True, null=True, verbose_name="商品价格")
+
+    product_price = models.CharField(max_length=100, blank=True, null=True, verbose_name="爬虫抓取价格(文本)")
 
     scrape_status = models.CharField(
         max_length=20,

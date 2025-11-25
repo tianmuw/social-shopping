@@ -25,7 +25,7 @@ from rest_framework.routers import DefaultRouter
 # 我们需要先导入 viewset，而不是 router
 from topics.views import TopicViewSet
 from posts.views import PostViewSet
-from users.views import ProfileViewSet
+from users.views import ProfileViewSet, MerchantViewSet
 from chat.views import ConversationViewSet
 from notifications.views import NotificationViewSet
 
@@ -39,6 +39,7 @@ router_v1.register(r'posts', PostViewSet, basename='post')
 router_v1.register(r'profiles', ProfileViewSet, basename='profile')
 router_v1.register(r'chat/conversations', ConversationViewSet, basename='conversation')
 router_v1.register(r'notifications', NotificationViewSet, basename='notification')
+router_v1.register(r'merchants', MerchantViewSet, basename='merchant')
 
 
 # 3. 定义主 URL 模式
