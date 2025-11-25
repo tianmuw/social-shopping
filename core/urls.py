@@ -53,6 +53,9 @@ urlpatterns = [
     # Djoser 会自动生成 /auth/token, /auth/users, /auth/users/me 等
     path('api/v1/auth/', include('users.urls')),  # <-- 这是修正后的一行
 
+    # AI 路由
+    path('api/v1/ai/', include('ai_agent.urls')),
+
     # (!!!) 新增这一行 (!!!)
     # 这将为我们提供 /api-auth/login/ 和 /api-auth/logout/
     # 专门用于在浏览器中测试 API

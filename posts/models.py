@@ -4,6 +4,8 @@ from django.conf import settings
 # 导入我们刚创建的 Topic 模型
 from topics.models import Topic
 
+from pgvector.django import VectorField
+
 
 class Post(models.Model):
     """
@@ -19,6 +21,11 @@ class Post(models.Model):
 
     # 视频字段
     video = models.FileField(upload_to='posts/videos/', blank=True, null=True, verbose_name="视频")
+
+    # 存储语义向量
+    # 阿里云 text-embedding-v1/v2 模型的维度通常是 1536
+    # 我们允许它为空，因为老帖子暂时没有向量
+    embedding = VectorField(dimensions=1536, blank=True, null=True)
 
     view_count = models.PositiveIntegerField(default=0, verbose_name="浏览量")
     created_at = models.DateTimeField(auto_now_add=True)

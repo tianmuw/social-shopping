@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'posts.apps.PostsConfig',
     'chat.apps.ChatConfig',
     'notifications.apps.NotificationsConfig',
+    'ai_agent.apps.AiAgentConfig',
 ]
 
 MIDDLEWARE = [
